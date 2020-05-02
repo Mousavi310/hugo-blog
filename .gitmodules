@@ -4,3 +4,9 @@
 [submodule "themes/chunky-poster"]
 	path = themes/chunky-poster
 	url = https://github.com/puresyntax71/hugo-theme-chunky-poster.git
+[submodule "themes/harbor"]
+	path = themes/harbor
+	url = https://github.com/matsuyoshi30/harbor.git
+[submodule "themes/beautifulhugo"]
+	path = themes/beautifulhugo
+	url = https://github.com/halogenica/beautifulhugo.git
