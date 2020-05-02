@@ -8,3 +8,12 @@ theme = "chunky-poster"
     enable = true
     theme = "okaidia"
 
+
+[menu]
+
+  [[menu.main]]
+    identifier = "about"
+    name = "about me"
+    pre = "<i class='fa fa-heart'></i>"
+    url = "/about/"
+    weight = -110
