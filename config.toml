@@ -12,8 +12,8 @@ theme = "chunky-poster"
 [menu]
 
   [[menu.main]]
-    identifier = "about"
+    identifier = "aboutme"
     name = "about me"
     pre = "<i class='fa fa-heart'></i>"
-    url = "/about/"
+    url = "/aboutme/"
     weight = -110
