@@ -2,3 +2,8 @@ baseURL = "http://example.org/"
 languageCode = "en-us"
 title = "Morteza Site"
 theme = "chunky-poster"
+
+[params]
+  [params.prismJS]
+    enable = true
+    theme = "okaidia"
