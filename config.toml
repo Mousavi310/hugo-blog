@@ -1,9 +1,10 @@
-baseURL = "http://example.org/"
+baseURL = "https://mousavi310.github.io/"
 languageCode = "en-us"
-title = "Morteza Site"
+title = "Morteza Mousavi"
 theme = "chunky-poster"
 
 [params]
   [params.prismJS]
     enable = true
     theme = "okaidia"
+
