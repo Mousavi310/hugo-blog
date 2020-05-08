@@ -5,49 +5,30 @@ draft: false
 images: ["/images/jessica-ruscello-DoSDQvzjeH0-unsplash.jpg"]
 ---
 
+A unique index on a field help developers to ensure that, their table will not contains two records with the same value for the field. A soft delete helps to logically delete a record while keeping its data, using a flag field (for example `IsDeleted`) in the table. The problems arises when you want to add a record that has the same value in unique indexed field that is used already in a deleted record. Although the record is logically deleted, but unique index is not aware that record is soft-deleted and raise duplication error.
 
 ### TLDR;
+You can add `HasFilter("IsDeleted = 0")` in your EF Core configuration as follow:
 
+``` csharp
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            //This will make sure we have unique product names
+            modelBuilder
+                .Entity<Product>()
+                .HasIndex(p => p.Name)
+                //This make index filtered
+                .HasFilter("IsDeleted = 0")
+                .IsUnique();
+
+            //....
+        }
+```
+
+that make your index filtered. This way, unique index works only on not deleted records.
 
 ### Real Example
-
-
-A unique index on a field help developers to ensure that, their table will not contains two records with the same value for the field. A soft delete helps to 
-
-The problems arises when
-
-So lets start with an exmaple using `ASP.NET Core 3.1 Web API`. Create new app:
-
-``` dotnet
-dotnet new webapi -o SoftDeleteSample
-cd SoftDeleteSample
-dotnet add package Microsoft.EntityFrameworkCore --version 3.1.3
-dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 3.1.3
-```
-and install tools for enabling database migration:
-
-``` dotnet
-dotnet tool install --global dotnet-ef
-dotnet add package Microsoft.EntityFrameworkCore.Design
-```
-
-Open the project in your IDE (Visual Studio in my case):
-
-``` bash
-start .\SoftDeleteSample.csproj
-```
-
-Set Sql Server connection string in your `appsettings.json` as follow:
-
-``` json
-{
-    "ConnectionStrings" : {
-        "DefaultConnection": "Server=.;Database=Store-Dev;User Id=sa;Password=your(#SecurePassword!123)"
-    }
-}
-```
-
-Add `Product` class:
+So lets start with an exmaple using `ASP.NET Core 3.1 Web API`. Assuming `StoreContext` is our `DbContext` and  `Product` entity class:
 
 ``` csharp
 public class Product
@@ -59,48 +40,25 @@ public class Product
 }
 ```
 
-And `StoreContex`:
+To achieve soft delete and unique index we must add following configuration to `StoreContext` class:
 
 ``` csharp
-public class StoreContext : DbContext
+protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
-    public DbSet<Product> Products { get; set; }
+    //This will make sure we have unique product names
+    modelBuilder
+        .Entity<Product>()
+        .HasIndex(p => p.Name)
+        .IsUnique();
+
+    //This will exclude products with IsDeleted=1 when querying Products using EF
+    modelBuilder
+        .Entity<Product>()
+        .HasQueryFilter(p => !p.IsDeleted);
 }
-
 ```
 
-In `Startup` class, add StoreContext to service collection:
-
-``` csharp
-```
-
-Now we configure Product
-
-First we want a unique index on `Name` field:
-
-
-Secondly, we want to fitler 
-
-
-Now migrate database:
-
-``` dotnet
-dotnet ef migrations add "Initial"
-dotnet ef database update
-```
-
-Create `ProductsController` and inject `StoreContext`:
-
-Add API for creating a product
-
-Add API for getting list of products
-
-Add API for deleting a product
-
-
-So lets have a scenario:
-
-If we delete a record `White Shirt` and Want to add new `White Shirt` product we receive following error:
+So lets create a product named `White Shirt`:
 
 ``` curl
 curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
@@ -110,18 +68,20 @@ curl --location --request POST 'https://localhost:5001/api/products' --insecure 
 {"id":6,"name":"White Shirt","isDeleted":false}
 ```
 
+The product created successfully with `Id` 6. Now get all products:
+
 ``` curl
  curl --location --request GET 'https://localhost:5001/api/products' --insecure
 
  [{"id":6,"name":"White Shirt","isDeleted":false}]
 ```
 
-Try to delete:
- 
+Let's delete the product:
 
 ``` curl
 curl --location --request DELETE 'https://localhost:5001/api/products/6' --insecure
 ```
+The product successfully deleted. To make sure the product is not shown in our list API, let's fetch list of products again:
 
 ``` curl
  curl --location --request GET 'https://localhost:5001/api/products' --insecure
@@ -129,7 +89,7 @@ curl --location --request DELETE 'https://localhost:5001/api/products/6' --insec
  []
 ```
 
-If we retry to add `White Shirt`, we get following 
+If we retry to add a product `White Shirt`, we get an `SqlException` error:
 
 ``` curl
 curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
@@ -157,12 +117,24 @@ Sql server in 2008 introduced [filtered index](https://docs.microsoft.com/en-us/
 which allow us to only check index based on some conditions. The conditions in our case is `IsDeleted = 0`; we want only index not deleted records and make sure only not deleted records are unique. To do this add `HasFilter("IsDeleted = 0")` to `StoreContext` configuration:
 
 ``` csharp
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            //This will make sure we have unique product names
+            modelBuilder
+                .Entity<Product>()
+                .HasIndex(p => p.Name)
+                //This make index filtered
+                .HasFilter("IsDeleted = 0")
+                .IsUnique();
 
+            //This will exclude products with IsDeleted=1 when querying Products using EF
+            modelBuilder
+                .Entity<Product>()
+                .HasQueryFilter(p => !p.IsDeleted);
+        }
 ```
 
-Migrate your database and check it again:
-
-
+Migrate your database and test it again by adding `White Shirt` product:
 ``` curl
 curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
 "name": "White Shirt"
@@ -170,13 +142,15 @@ curl --location --request POST 'https://localhost:5001/api/products' --insecure 
 
 {"id":8,"name":"White Shirt","isDeleted":false}
 ```
-
+As you see above the product created with `Id` 8. We can see it in the list API:
 
 ``` curl
  curl --location --request GET 'https://localhost:5001/api/products' --insecure
 
  [{"id":8,"name":"White Shirt","isDeleted":false}]
 ```
+
+And the filter index prevent duplication of not deleted products:
 
 ``` curl
 curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
