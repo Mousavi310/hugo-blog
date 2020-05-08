@@ -1,6 +1,6 @@
 baseURL = "https://mousavi310.github.io/"
 languageCode = "en-us"
-title = "Blog"
+title = "Morteza Mousavi"
 theme = "chunky-poster"
 
 [params]

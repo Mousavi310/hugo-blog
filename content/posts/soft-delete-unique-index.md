@@ -1,14 +1,15 @@
 ---
 title: "Unique Index With Soft Delete Support in Entity Framework Core"
+publishdate: 2020-05-08T12:24:37+04:30
 date: 2020-05-08T12:24:37+04:30
 draft: false
 images: ["/images/jessica-ruscello-DoSDQvzjeH0-unsplash.jpg"]
 ---
 
-A `unique index` on a table field, helps developers to ensure that, their table will not contains duplicated values for that field. On the other hand, a `soft delete` helps us to logically delete a record while keeping the record itself, using a flag field (for example `IsDeleted` boolean field) in the table. The problems arise when you want to add a record that its unique indexed field value, has been already used in a deleted record. Although the record is logically deleted, the unique index is not aware that the record has been deleted (softly) and raise duplication error in response. In this blog post, I want to show how we can resolve this issue.
+A `unique index` on a table field, helps developers to ensure that, their table will not have any duplicated values for that field. On the other hand, a `soft delete` helps us to logically delete a record while keeping the record itself, using a flag field (for example `IsDeleted` boolean field) in the table. The problems arise when you want to add a record that its unique indexed field value, has been already used in a deleted record. Although the record is logically deleted, the unique index is not aware that the record has been deleted (softly) and raise duplication error in response. In this blog post, I want to show how we can solve this issue.
 
 ### Real Example in .NET Core 3.1
-So let's consider an example using `ASP.NET Core 3.1 Web API` (You can see full source code in [GitHub](https://github.com/Mousavi310/dotnet-training/tree/master/SoftDeleteSample)). Assuming `StoreContext` is our `DbContext` and  `Product` is our entity class:
+So let's consider an example using `ASP.NET Core 3.1 Web API` (you can see the full source code in [GitHub](https://github.com/Mousavi310/dotnet-training/tree/master/SoftDeleteSample)). Assuming `StoreContext` is our `DbContext` and  `Product` is our entity class:
 
 ``` csharp
 public class Product
@@ -19,7 +20,7 @@ public class Product
 }
 ```
 
-To achieve soft delete and unique index we must add following configuration to `StoreContext` class:
+To achieve soft deletion and unique index, we must add following configuration to `StoreContext` class:
 
 ``` csharp
 protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -60,7 +61,7 @@ Let's delete the product:
 ``` curl
 curl --location --request DELETE 'https://localhost:5001/api/products/6' --insecure
 ```
-The product successfully deleted. To make sure the product is not shown in our list API, let's fetch list of products again:
+The product successfully deleted. To make sure the product is not shown in our list API, let’s fetch the list of products again:
 
 ``` curl
  curl --location --request GET 'https://localhost:5001/api/products' --insecure
@@ -68,7 +69,7 @@ The product successfully deleted. To make sure the product is not shown in our l
  []
 ```
 
-If we retry to add `White Shirt` again, we will get an `SqlException` error:
+If we retry to add `White Shirt` again, we will get a    `SqlException` error:
 
 ``` curl
 curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
@@ -93,7 +94,7 @@ The statement has been terminated.
 Indicating that `White Shirt` is already inserted and `IX_Products_Name` unique index prevents that.
 
 ### Use Filter Index to Rescue
-Sql server 2008 introduced [filtered index](https://docs.microsoft.com/en-us/sql/relational-databases/indexes/create-filtered-indexes) feature which allows us to have index with conditions. The conditions in our case is `IsDeleted = 0`; we want only index all not deleted records and make sure only not deleted records are unique. To achieve this in Entity Framework Core, add `HasFilter("IsDeleted = 0")` to `StoreContext` configuration:
+SQL Server 2008 introduced [filtered index](https://docs.microsoft.com/en-us/sql/relational-databases/indexes/create-filtered-indexes) feature which allows us to have an index with conditions. We have only one condition: `IsDeleted = 0`; we want to index all not deleted records and make sure only not deleted records are unique. To achieve this in Entity Framework Core, add `HasFilter("IsDeleted = 0")` to `StoreContext` configuration:
 
 ``` csharp
 protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -141,4 +142,4 @@ Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while updatin
 ```
 
 ### Conclusion
-In this article, first, I tried to show you how we can add soft delete to our data models. Then I showed you if we have a unique index, this could cause a problem if we want to add a record that its unique indexed field value, has been already used in a deleted record. Then using `Filtered Index` I only unique indexed the records that are not soft deleted. 
+In this article, first, I tried to show you how we can add soft deletion to our data models. Then I showed you if we have a unique index, this could cause a problem if we want to add a record that its unique indexed field value, has been already used in a deleted record. Then using `Filtered Index` I only unique indexed the records that are not soft deleted. 
