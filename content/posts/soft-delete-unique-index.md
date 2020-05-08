@@ -1,5 +1,5 @@
 ---
-title: "Unique Index Supporting Soft Delete in ASP.NET Core"
+title: "Unique Index With Soft Delete Support in Entity Framework Core"
 date: 2020-05-08T12:24:37+04:30
 draft: false
 images: ["/images/jessica-ruscello-DoSDQvzjeH0-unsplash.jpg"]
@@ -7,28 +7,8 @@ images: ["/images/jessica-ruscello-DoSDQvzjeH0-unsplash.jpg"]
 
 A unique index on a field help developers to ensure that, their table will not contains two records with the same value for the field. A soft delete helps to logically delete a record while keeping its data, using a flag field (for example `IsDeleted`) in the table. The problems arises when you want to add a record that has the same value in the unique indexed field that is used already in a deleted record. Although the record is logically deleted, the unique index is not aware that the record has soft been deleted (softly) and raise duplication error in response.
 
-### TLDR;
-You can add `HasFilter("IsDeleted = 0")` in your EF Core configuration as follow:
-
-``` csharp
-protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            //This will make sure we have unique product names
-            modelBuilder
-                .Entity<Product>()
-                .HasIndex(p => p.Name)
-                //This make index filtered
-                .HasFilter("IsDeleted = 0")
-                .IsUnique();
-
-            //....
-        }
-```
-
-that make your index filtered. This way, unique index works only on not deleted records.
-
-### Real Example
-So lets start with an exmaple using `ASP.NET Core 3.1 Web API`. Assuming `StoreContext` is our `DbContext` and  `Product` entity class:
+### Real Example in .NET Core 3.1
+So let's show an example using `ASP.NET Core 3.1 Web API`. Assuming `StoreContext` is our `DbContext` and  `Product` entity class:
 
 ``` csharp
 public class Product
