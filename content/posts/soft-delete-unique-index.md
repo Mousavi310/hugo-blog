@@ -142,4 +142,4 @@ Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while updatin
 ```
 
 ### Conclusion
-In this article, first, I tried to show you how we can add soft deletion to our data models. Then I showed you if we have a unique index, this could cause a problem if we want to add a record that its unique indexed field value, has been already used in a deleted record. Then using `Filtered Index` I only unique indexed the records that are not soft deleted. 
+In this article, first, I tried to show you how we can add soft deletion to our data models. Then I showed you if we have a unique index, this could cause a problem if we want to add a record that its unique indexed field value, has been already used in a deleted record. Then using `Filtered Index` I only indexed the records that are not soft deleted. 
