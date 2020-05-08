@@ -106,6 +106,8 @@ If we delete a record `White Shirt` and Want to add new `White Shirt` product we
 curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
 "name": "White Shirt"
 }'
+
+{"id":6,"name":"White Shirt","isDeleted":false}
 ```
 
 ``` curl
@@ -151,7 +153,38 @@ The statement has been terminated.
 ```
 Indicating that `White Shirt` is duplicated.
 ### Use Filter Index to Rescue
+Sql server in 2008 introduced [filtered index](https://docs.microsoft.com/en-us/sql/relational-databases/indexes/create-filtered-indexes) concept
+which allow us to only check index based on some conditions. The conditions in our case is `IsDeleted = 0`; we want only index not deleted records and make sure only not deleted records are unique. To do this add `HasFilter("IsDeleted = 0")` to `StoreContext` configuration:
 
-migrate database:
+``` csharp
+
+```
+
+Migrate your database and check it again:
+
+
+``` curl
+curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
+"name": "White Shirt"
+}'
+
+{"id":8,"name":"White Shirt","isDeleted":false}
+```
+
+
+``` curl
+ curl --location --request GET 'https://localhost:5001/api/products' --insecure
+
+ [{"id":8,"name":"White Shirt","isDeleted":false}]
+```
+
+``` curl
+curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
+"name": "White Shirt"
+}'
+
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while updating the entries. See the inner exception for details.
+ ---> Microsoft.Data.SqlClient.SqlException (0x80131904): Cannot insert duplicate key row in object 'dbo.Products' with unique index 'IX_Products_Name'. The duplicate key value is (White Shirt).
+```
 
 ### Conclusion
