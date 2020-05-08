@@ -1,6 +1,6 @@
 baseURL = "https://mousavi310.github.io/"
 languageCode = "en-us"
-title = "Morteza Mousavi"
+title = "Blog"
 theme = "chunky-poster"
 
 [params]
@@ -13,7 +13,7 @@ theme = "chunky-poster"
 
   [[menu.main]]
     identifier = "aboutme"
-    name = "about me"
+    name = "About Me"
     pre = "<i class='fa fa-heart'></i>"
     url = "/aboutme/"
     weight = -110

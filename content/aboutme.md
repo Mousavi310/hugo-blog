@@ -3,8 +3,12 @@ title: "About Me"
 date: 2020-05-02T23:05:23+04:30
 draft: true
 ---
+![Profile](/images/profile.jfif)
 
-Hi, My name is Seyed Morteza Mousavi. I am a senior ASP.NET Core developer. You can find me on 
+Hi, My name is Seyed Morteza Mousavi. I am a senior ASP.NET Core developer.
+
+
+You can find me on 
 
 - [LinkedIn](https://www.linkedin.com/in/seyed-morteza-mousavi-a515a779/)
 - [StackOverflow](https://stackoverflow.com/users/953975/seyed-morteza-mousavi)
