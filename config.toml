@@ -3,6 +3,8 @@ languageCode = "en-us"
 title = "Morteza Mousavi"
 theme = "chunky-poster"
 
+googleAnalytics = "UA-165926398-1"
+
 [params]
   [params.prismJS]
     enable = true
@@ -17,3 +19,4 @@ theme = "chunky-poster"
     pre = "<i class='fa fa-heart'></i>"
     url = "/aboutme/"
     weight = -110
+
