@@ -166,7 +166,7 @@ public class HomeController : ControllerBase
         _options = options;
     }
 
-    [Route("api")] 
+    [Route("api/email-service/key")] 
     public IActionResult Index()
     {
         return Ok(_options.Value.ApiKey);
@@ -181,7 +181,7 @@ dotnet run --project .\ConfigurationProviders.Samples\ConfigurationProviders.Sam
 In another console if we curl the API:
 
 ``` bash
-curl https://localhost:5001/api
+curl https://localhost:5001/api/email-service/key
 f08e37a7-af75-49a7-80c3-9ecd7df9ba74
 ```
 
