@@ -98,7 +98,9 @@ public class SqlServerConfigurationProvider : ConfigurationProvider
 }
 ```
 
-This assumes that we have stored our configuration in `Settings` table. For convinience in using the provider we add an extension method `AddSqlServer` which receives a connection string and an `IConfigurationBuilder`. This way we can easily add our provider to the builder:
+This assumes that we have stored our configuration in `Settings` table. As you see above we simply read data from Key and Value columns from Settings table and store theme as key/value pair inside a dictionary. At the end we set `Data` equal to that dictionary.
+
+For convinience in using the provider we add an extension method `AddSqlServer` which receives a connection string and an `IConfigurationBuilder`. This way we can easily add our provider to the builder:
 
 ``` csharp
 public static class SqlServerConfigurationBuilderExtensions
@@ -173,6 +175,8 @@ Finally insert API key configuration in the `Settings` table:
 Insert into Settings([Key], Value) Values('EmailService:ApiKey', 'f08e37a7-af75-49a7-80c3-9ecd7df9ba74')
 ```
 
+Let's test the provider by running the sample project:
+
 ``` dotnet
 dotnet run --project .\ConfigurationProviders.Samples\ConfigurationProviders.Samples.csproj
 ```
@@ -186,34 +190,31 @@ f08e37a7-af75-49a7-80c3-9ecd7df9ba74
 
 We see that we could successfully read configuration from SQL Server!
 
-Notice that if we change a value in database, the new value is not available in our configuration provider, lets test it:
+The configuration works great but if we change a value in database, the new value is not available in our configuration provider, let's test it:
 
 ``` sql
 Update Settings Set Value = '0aaf9ffc-d637-4c40-8a1d-2ff7d73b3b6a' Where [Key] = 'EmailService:ApiKey'
 ```
+And check the configuration:
 
 ``` bash
 curl https://localhost:5001/api/email-service/key
 f08e37a7-af75-49a7-80c3-9ecd7df9ba74
 ```
 
-It does not work. Lets return back the value:
+As you see we still get the old value. Lets return back the value:
 
 ``` sql
 Update Settings Set Value = 'f08e37a7-af75-49a7-80c3-9ecd7df9ba74' Where [Key] = 'EmailService:ApiKey'
 ```
 
-
-The above code works and we can test it by creating an ASP.NET application.
-
-
-But what if a config change in the database? Shouldn't we refresh or options?
+And see how we can reload the configurations.
 
 ## Reload configuration
 
-As you know, IOptions<T> does not reload configurations. It just read once from `Data` and cache it for entire lifetime of your application. You can use IOptionsSnapshot<T> which read configuration from `Data` in each HTTP Request. Even if we use IOptionsSnapshot<T> we know that `Data` is loaded once. To reload `Data` we can use something called `IChangeToken`. Using `IChangeToken` we can **Watch** something is changed and in change event we can call a callback (here we want to reload our `Data` from database by just calling `Load` method again).
+As you know, IOptions<T> does not reload configurations. It just read once from `Data` and caches it for the entire lifetime of your application. You can use `IOptionsSnapshot<T>` which read configuration from `Data` in each HTTP Request. Even if we use IOptionsSnapshot<T> we know that `Data` is loaded once. To reload `Data` we can use something called `IChangeToken`. Using `IChangeToken` we can **Watch** something is changed and in the change event of the `IChangeToken` we can call a callback (here we want to reload our `Data` from the database by just calling `Load` method again).
 
-So lets do the change. First change IOptions<EmailServiceOptions> to IOptionsSnapshot<EmailServiceOptions>:
+So let's use `IChangeToken` in our provider. But first change IOptions<EmailServiceOptions> to IOptionsSnapshot<EmailServiceOptions>:
 
 ``` csharp
 public HomeController(IOptionsSnapshot<EmailServiceOptions> options)
@@ -222,7 +223,7 @@ public HomeController(IOptionsSnapshot<EmailServiceOptions> options)
 }
 ```
 
-Add change token in your provider constructor:
+Now in `SqlServerConfigurationProvider` class, add change token in your provider constructor. For this I used a utility method `ChangeToken.OnChange` that accepts two delegates. One for creating a change token, and the second one for handling change event raised by the change token:
 
 ``` csharp
  public SqlServerConfigurationProvider(SqlServerConfigurationSource source)
@@ -240,6 +241,8 @@ Add change token in your provider constructor:
 
 ```
 
+As you see above we define how a token can be created, and in the second argument use `Load` as a callback argument which is called when change token on change event raised. We define a watcher interface that is responsible for creating a change token:
+
 ``` csharp
 public class SqlServerConfigurationSource : IConfigurationSource
 {
@@ -249,12 +252,16 @@ public class SqlServerConfigurationSource : IConfigurationSource
 }
 ```
 
+`ISqlServerWatcher` interface has the following implementation.
+
 ``` csharp
 public interface ISqlServerWatcher : IDisposable
 {
     IChangeToken Watch();
 }
 ```
+
+A simple implementation of `ISqlServerWatcher` is `SqlServerPeriodicalWatcher`. In `SqlServerPeriodicalWatcher` I just fire change event with `_refreshInterval` inerval. This is really an easy implementation but for most scenarios it works. So in the `Watch` method, I create `CancellationChangeToken`. 
 
 ``` csharp
 internal class SqlServerPeriodicalWatcher : ISqlServerWatcher
@@ -321,7 +328,7 @@ dotnet run --project .\ConfigurationProviders.Samples\ConfigurationProviders.Sam
 
 In another terminal
 
-``` dotnet
+``` bash
 curl https://localhost:5001/api/email-service/key
 f08e37a7-af75-49a7-80c3-9ecd7df9ba74
 ```
@@ -333,7 +340,7 @@ Update Settings Set Value = '0aaf9ffc-d637-4c40-8a1d-2ff7d73b3b6a' Where [Key] =
 
 Waits for 5 seconds and then retry:
 
-``` dotnet
+``` bash
 curl https://localhost:5001/api/email-service/key
 0aaf9ffc-d637-4c40-8a1d-2ff7d73b3b6a
 ```
