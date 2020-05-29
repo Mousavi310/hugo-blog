@@ -6,15 +6,13 @@ draft: true
 images: ["/images/alexander-andrews-MrCetm-g5n4-unsplash.jpg"]
 ---
 
-As you know you there are already [configuration providers](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-2.2#custom-configuration-provider) for a variety of sources. ‌But if you didn't find your source configuration provider, you can simply implement it. It just take a few minutes to implement your own configuration provider. In this blog post I want to show you how you can implement custom SQL Server configuration provider and more importantly how you can refresh the configuration whenever your data in the database changes.
+As you know you, there are already [configuration providers](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-2.2#custom-configuration-provider) for a variety of sources. ‌But if you didn't find your source configuration provider, you can simply implement it. It just takes a few minutes to implement a configuration provider. In this blog post, I want to show you how you can implement a custom SQL Server configuration provider and more importantly how you can refresh the configuration data whenever your data in the database changes.
 
-This article has two parts. First you learn how to create your provider. Then you learn how to reload the configuration. The source code is available in [GitHub](https://github.com/Mousavi310/dotnet-training/tree/master/ConfigurationProviders).
+This article has two parts. First, you learn how to create your own provider. Then you learn how to reload the configuration. The source code is available in [GitHub](https://github.com/Mousavi310/dotnet-training/tree/master/ConfigurationProviders).
 
 ## Implement the SQL Server Configuration Provider
 
-To implement a configuration provider you need to have at least 2 classes: a `Configuration Source` and  a `Configuration Provider`. The configuration source has the information about the source (such as the location of JSON file, or the connection string of settings table and etc). The configuration provider uses the configuration source to read key/value pair settings from the source and store them in its `Data` property. `Data` is a `Dictionary<string, string>` type and your job is to fill it by reading database data. Let's begin to create a simple Sql Server Configuration provider:
-
-Create a solution:
+To implement a configuration provider you need to have at least 2 classes: a **configuration source** and  a **configuration provider**. The configuration source has the information about the source (such as the location of the JSON file, or the connection string of the settings table, etc). The configuration provider uses the configuration source to read key/value pair settings from the source and store them in its `Data` property. `Data` is a `Dictionary<string, string>` and your job is to fill it by reading database settings table. Let's begin to create a simple SQL Server Configuration provider by creating a solution:
 
 ``` dotnet
 mkdir ConfigurationProviders
@@ -29,14 +27,14 @@ dotnet new classlib -o ConfigurationProviders.SqlServer
 dotnet sln add ConfigurationProviders.SqlServer
 ```
 
-To implement provider base classes you must add `Microsoft.Extensions.Configuration` package to your project. You also need to add `Microsoft.Data.SqlClient` package to read data from SQL Server. 
+To implement provider base classes you must add `Microsoft.Extensions.Configuration` NuGet package to your project. You also need to add `Microsoft.Data.SqlClient` package to read data from SQL Server. 
 
 ``` dotnet
 dotnet add .\ConfigurationProviders.SqlServer\ConfigurationProviders.SqlServer.csproj package Microsoft.Data.SqlClient --version 1.1.3
 dotnet add .\ConfigurationProviders.SqlServer\ConfigurationProviders.SqlServer.csproj package Microsoft.Extensions.Configuration --version 3.1.4
 ```
 
-To test our provider I create a `Web API` sample project:
+To test our provider, I create a `Web API` sample project:
 
 ``` dotnet
 dotnet new webapi -o ConfigurationProviders.Samples
@@ -49,7 +47,7 @@ And add a reference to the provider project:
 dotnet add .\ConfigurationProviders.Samples\ConfigurationProviders.Samples.csproj reference .\ConfigurationProviders.SqlServer\ConfigurationProviders.SqlServer.csproj
 ```
 
-In provider project add `SqlServerConfigurationSource` implement `IConfigurationSource` interface. This is our configuration source which keep connection string to the database. Notice `IConfigurationSource` has a `Build` parameter that is used to create an instance of the provider.
+In the provider project add `SqlServerConfigurationSource` class that implements `IConfigurationSource` interface. This is our configuration source which keeps the connection string to the database. Notice `IConfigurationSource` has a `Build` parameter that is used to create an instance of the provider.
 
 ``` csharp
 public class SqlServerConfigurationSource : IConfigurationSource
@@ -98,9 +96,9 @@ public class SqlServerConfigurationProvider : ConfigurationProvider
 }
 ```
 
-This assumes that we have stored our configuration in `Settings` table. As you see above we simply read data from Key and Value columns from Settings table and store theme as key/value pair inside a dictionary. At the end we set `Data` equal to that dictionary.
+This assumes that we have stored our configuration in `Settings` table. As you see above we simply read data from `Key` and `Value` columns from `Settings` table and store theme as key/value pairs inside a dictionary. In the end, we store the dictionary in the `Data` property.
 
-For convinience in using the provider we add an extension method `AddSqlServer` which receives a connection string and an `IConfigurationBuilder`. This way we can easily add our provider to the builder:
+For convinience in using the provider we add an extension method `AddSqlServer` which receives a connection string and an `IConfigurationBuilder` as parameters. This way we can easily add our provider to the builder:
 
 ``` csharp
 public static class SqlServerConfigurationBuilderExtensions
@@ -112,7 +110,7 @@ public static class SqlServerConfigurationBuilderExtensions
 }
 ```
 
-Now let's verify our provider in the `Web API` project. I want to inject the configuration using `Options` pattern. Assume that we use an email service and to send emails we need an API key. So we can create following class:
+Now let's verify our provider in the `Web API` project. I want to inject the configuration using `Options` pattern. Assume that we use an email service and to send emails we need an API key. So we can create the following class:
 
 ``` csharp
 public class EmailServiceOptions
@@ -188,9 +186,9 @@ curl https://localhost:5001/api/email-service/key
 f08e37a7-af75-49a7-80c3-9ecd7df9ba74
 ```
 
-We see that we could successfully read configuration from SQL Server!
+We can see the configuration is loaded from the SQL Server successfully!
 
-The configuration works great but if we change a value in database, the new value is not available in our configuration provider, let's test it:
+The configuration works great but if we change a value in the database, the new value is not available in our configuration provider, let's test it:
 
 ``` sql
 Update Settings Set Value = '0aaf9ffc-d637-4c40-8a1d-2ff7d73b3b6a' Where [Key] = 'EmailService:ApiKey'
@@ -202,19 +200,17 @@ curl https://localhost:5001/api/email-service/key
 f08e37a7-af75-49a7-80c3-9ecd7df9ba74
 ```
 
-As you see we still get the old value. Lets return back the value:
+As you see we still get the old value. Let's undo it and set the old value for the configuration:
 
 ``` sql
 Update Settings Set Value = 'f08e37a7-af75-49a7-80c3-9ecd7df9ba74' Where [Key] = 'EmailService:ApiKey'
 ```
 
-And see how we can reload the configurations.
-
 ## Reload configuration
 
 As you know, `IOptions<T>` does not reload configurations automatically. It just read once from `Data` and caches it for the entire lifetime of your application. You can use `IOptionsSnapshot<T>` which read configuration from `Data` in each HTTP Request. Even if we use `IOptionsSnapshot<T>` we know that `Data` is loaded once. To reload `Data` we can use something called `IChangeToken`. Using `IChangeToken` we can **Watch** something is changed and in the change event of the `IChangeToken` we can call a callback (here we want to reload our `Data` from the database by just calling `Load` method again).
 
-So let's use `IChangeToken` in our provider. But first change IOptions<EmailServiceOptions> to IOptionsSnapshot<EmailServiceOptions>:
+So let's use `IChangeToken` in our provider. But first change `IOptions<EmailServiceOptions>` to `IOptionsSnapshot<EmailServiceOptions>`:
 
 ``` csharp
 public HomeController(IOptionsSnapshot<EmailServiceOptions> options)
