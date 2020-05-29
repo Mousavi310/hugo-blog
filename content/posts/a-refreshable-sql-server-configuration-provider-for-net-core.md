@@ -47,7 +47,7 @@ And add a reference to the provider project:
 dotnet add .\ConfigurationProviders.Samples\ConfigurationProviders.Samples.csproj reference .\ConfigurationProviders.SqlServer\ConfigurationProviders.SqlServer.csproj
 ```
 
-In the provider project add `SqlServerConfigurationSource` class that implements `IConfigurationSource` interface. This is our configuration source which keeps the connection string to the database. Notice `IConfigurationSource` has a `Build` parameter that is used to create an instance of the provider.
+In the provider project add `SqlServerConfigurationSource` class that implements `IConfigurationSource` interface. This is our configuration source which keeps the connection string to the database. Notice `IConfigurationSource` has a `Build` method that is used to create an instance of the provider.
 
 ``` csharp
 public class SqlServerConfigurationSource : IConfigurationSource
@@ -331,7 +331,7 @@ In another terminal:
 curl https://localhost:5001/api/email-service/key
 f08e37a7-af75-49a7-80c3-9ecd7df9ba74
 ```
-Lets change the value:
+Let's change the value:
 
 ``` sql
 Update Settings Set Value = '0aaf9ffc-d637-4c40-8a1d-2ff7d73b3b6a' Where [Key] = 'EmailService:ApiKey'
@@ -344,12 +344,12 @@ curl https://localhost:5001/api/email-service/key
 0aaf9ffc-d637-4c40-8a1d-2ff7d73b3b6a
 ```
 
-As you see configuration reloaded successfully.
+As you see the configuration reloaded successfully.
 
 
 ## Conclusion
 
-In this article, I showed you how it is easy to implement your own configuration provider. Then I showed how you can reload the configuration periodically, so you can get the most recent configuration from your data source. Also, If you want a more configuration library you can check my implementation in [Github](https://github.com/Mousavi310/Mousavi.Extensions.Configuration.SqlServer)
+In this article, I showed you how it is easy to implement your own configuration provider. Then I showed how you can reload the configuration periodically, so you can get the most recent configuration from your data source. Also, I created a simple library that you can check it at [Github](https://github.com/Mousavi310/Mousavi.Extensions.Configuration.SqlServer)
 
 
 
