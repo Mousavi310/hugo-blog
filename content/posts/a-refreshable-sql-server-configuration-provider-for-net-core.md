@@ -1,5 +1,5 @@
 ---
-title: "A Refreshable Sql Server Configuration Provider for .NET Core"
+title: "A Refreshable SQL Server Configuration Provider for .NET Core"
 date: 2020-05-22T00:04:09+04:30
 draft: true
 
@@ -212,7 +212,7 @@ And see how we can reload the configurations.
 
 ## Reload configuration
 
-As you know, IOptions<T> does not reload configurations. It just read once from `Data` and caches it for the entire lifetime of your application. You can use `IOptionsSnapshot<T>` which read configuration from `Data` in each HTTP Request. Even if we use IOptionsSnapshot<T> we know that `Data` is loaded once. To reload `Data` we can use something called `IChangeToken`. Using `IChangeToken` we can **Watch** something is changed and in the change event of the `IChangeToken` we can call a callback (here we want to reload our `Data` from the database by just calling `Load` method again).
+As you know, `IOptions<T>` does not reload configurations automatically. It just read once from `Data` and caches it for the entire lifetime of your application. You can use `IOptionsSnapshot<T>` which read configuration from `Data` in each HTTP Request. Even if we use `IOptionsSnapshot<T>` we know that `Data` is loaded once. To reload `Data` we can use something called `IChangeToken`. Using `IChangeToken` we can **Watch** something is changed and in the change event of the `IChangeToken` we can call a callback (here we want to reload our `Data` from the database by just calling `Load` method again).
 
 So let's use `IChangeToken` in our provider. But first change IOptions<EmailServiceOptions> to IOptionsSnapshot<EmailServiceOptions>:
 
@@ -223,7 +223,7 @@ public HomeController(IOptionsSnapshot<EmailServiceOptions> options)
 }
 ```
 
-Now in `SqlServerConfigurationProvider` class, add change token in your provider constructor. For this I used a utility method `ChangeToken.OnChange` that accepts two delegates. One for creating a change token, and the second one for handling change event raised by the change token:
+Now in `SqlServerConfigurationProvider` class we can use a utility method `ChangeToken.OnChange` that accepts two delegates. One for creating a change token, and the second one for handling change event raised by that change token:
 
 ``` csharp
  public SqlServerConfigurationProvider(SqlServerConfigurationSource source)
@@ -241,7 +241,7 @@ Now in `SqlServerConfigurationProvider` class, add change token in your provider
 
 ```
 
-As you see above we define how a token can be created, and in the second argument use `Load` as a callback argument which is called when change token on change event raised. We define a watcher interface that is responsible for creating a change token:
+As you see above we define how a token can be created, and in the second argument we use `Load` as a callback method which is called when change token event raised. We define a watcher interface that is responsible for creating a change token:
 
 ``` csharp
 public class SqlServerConfigurationSource : IConfigurationSource
@@ -252,7 +252,7 @@ public class SqlServerConfigurationSource : IConfigurationSource
 }
 ```
 
-`ISqlServerWatcher` interface has the following implementation.
+`ISqlServerWatcher` interface has the following declaration:
 
 ``` csharp
 public interface ISqlServerWatcher : IDisposable
@@ -261,7 +261,7 @@ public interface ISqlServerWatcher : IDisposable
 }
 ```
 
-A simple implementation of `ISqlServerWatcher` is `SqlServerPeriodicalWatcher`. In `SqlServerPeriodicalWatcher` I just fire change event with `_refreshInterval` inerval. This is really an easy implementation but for most scenarios it works. So in the `Watch` method, I create `CancellationChangeToken`. 
+A simple implementation of `ISqlServerWatcher` is `SqlServerPeriodicalWatcher`. In `SqlServerPeriodicalWatcher`, I just fire change event every `_refreshInterval` inerval. This is really an easy implementation, but for most scenarios, it works. So in the `Watch` method, I create `CancellationChangeToken`. 
 
 ``` csharp
 internal class SqlServerPeriodicalWatcher : ISqlServerWatcher
@@ -297,8 +297,9 @@ internal class SqlServerPeriodicalWatcher : ISqlServerWatcher
     }
 }
 ```
+You can use your own implementation of `IChangeToken`. In the above example I used `CancellationChangeToken` that is already provided by the base library. The `CancellationChangeToken`, accepts a `CancellationToken` of a `CancellationTokenSource` object. When you call `Cancel` method of the `CancellationTokenSource`, the change event callback of `CancellationChangeToken` will be called. I used a timer to call the `Cancel` method every `_refreshInterval`. This allow us to call `Load` every `_refreshInterval` interval.
 
-Finally
+Finally, allow the client set `refreshInterval` when registering the provider: 
 
 ``` csharp
 public static IConfigurationBuilder AddSqlServer(this IConfigurationBuilder builder, 
@@ -314,13 +315,15 @@ public static IConfigurationBuilder AddSqlServer(this IConfigurationBuilder buil
 }
 ```
 
-And in your Program.cs
+No we can use it in our `Program.cs` file:
 
 ``` csharp
 builder.AddSqlServer(
                 "Server=localhost;Database=Example;User Id=sa;Password=your(#SecurePassword!123)",
                 TimeSpan.FromSeconds(5));
 ```
+
+I told the provider to refresh the configuration data every 5 seconds. Let's run the project:
 
 ``` dotnet
 dotnet run --project .\ConfigurationProviders.Samples\ConfigurationProviders.Samples.csproj
@@ -345,16 +348,12 @@ curl https://localhost:5001/api/email-service/key
 0aaf9ffc-d637-4c40-8a1d-2ff7d73b3b6a
 ```
 
-CancellationChangeToken is very easy to work. This change token receive an cancellationToken as input in the constructor.
-
-Whenever you cancel the token, it will call consumer action, which in our case is reloading configuration from the SQL Server.
-we can refresh our data whenever we cancel the token. If you want to refresh all of your configuration every 10s, just use a timer.
+As you see it works!
 
 
-[This is todo: If the number of config is two large then you can check for a sentinal value. You just check the value of this key and whenever this value changes in SQL server, you can reload all configurations from SQL Server.]
+## Conclusion
 
-
-- 
+In this article, I showed how easy is it to implement your own configuration provider. Then I showed how you can reload the configuration periodically, so you can get the most recent configuration from your data source. If you want a more configuration library you can check my implementation in [Github](https://github.com/Mousavi310/Mousavi.Extensions.Configuration.SqlServer)
 
 
 
