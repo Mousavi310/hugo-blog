@@ -1,7 +1,7 @@
 ---
 title: "Hello Blogging!"
 date: 2020-05-02T15:55:34+04:30
-draft: true
+draft: false
 
 images: ["/images/jaromir-kavan-vv-oEGlN-4E-unsplash.jpg"]
 ---

@@ -1,9 +1,9 @@
 ---
 title: "About Me"
 date: 2020-05-02T23:05:23+04:30
-draft: true
+draft: false
 ---
-![Profile](/images/profile.jfif)
+![Profile](/images/profile2.jpg)
 
 Hi, My name is Seyed Morteza Mousavi. I am a senior ASP.NET Core developer.
 

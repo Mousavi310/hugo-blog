@@ -1,7 +1,7 @@
 ---
 title: "A Refreshable SQL Server Configuration Provider for .NET Core"
 date: 2020-05-22T00:04:09+04:30
-draft: true
+draft: false
 
 images: ["/images/alexander-andrews-MrCetm-g5n4-unsplash.jpg"]
 ---
